@@ -1,0 +1,18 @@
+{
+  "name": "compact-empty-properties",
+  "version": "0.1.1",
+  "description": "Hide empty Obsidian Properties rows without changing Markdown.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs --production",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.8.7",
+    "typescript": "^5.7.0"
+  }
+}

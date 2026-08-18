@@ -1,0 +1,24 @@
+/* Only classes owned by Compact Empty Properties are styled. */
+.metadata-container .compact-empty-properties-hidden {
+	display: none !important;
+}
+
+.metadata-container .compact-empty-properties-toggle {
+	display: block;
+	width: auto;
+	margin: 0.15em 0 0.35em;
+	padding: 0.15em 0.35em;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-normal);
+	cursor: pointer;
+}
+
+.metadata-container .compact-empty-properties-toggle:hover,
+.metadata-container .compact-empty-properties-toggle:focus-visible {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
