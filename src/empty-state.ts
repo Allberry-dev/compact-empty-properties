@@ -78,7 +78,7 @@ export function emptyRowCount(rows: readonly VisibilityRow[]): number {
 }
 
 export function toggleText(expanded: boolean, hiddenCount: number): string {
-	return expanded ? "隐藏空属性" : `显示空属性 (${hiddenCount})`;
+	return expanded ? "隐藏属性" : `显示隐藏属性 (${hiddenCount})`;
 }
 
 function classifyText(text: string | undefined): DomValueState {

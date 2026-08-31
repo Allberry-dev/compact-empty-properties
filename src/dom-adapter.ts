@@ -8,9 +8,18 @@ import {
 export const METADATA_CONTAINER_SELECTOR = ".metadata-container";
 export const PROPERTY_ROW_SELECTOR = ".metadata-property";
 export const PROPERTY_KEY_SELECTOR = ".metadata-property-key";
+export const NATIVE_PROPERTY_ICON_SELECTOR = ".metadata-property-icon";
 export const PROPERTY_VALUE_SELECTOR = ".metadata-property-value";
 export const HIDDEN_CLASS = "compact-empty-properties-hidden";
+export const REVEALED_HIDDEN_CLASS = "compact-empty-properties-revealed-hidden";
+export const REVEAL_SEPARATOR_CLASS = "compact-empty-properties-reveal-separator";
+export const REVEAL_GROUP_LABEL_CLASS = "compact-empty-properties-reveal-group-label";
+export const REVEAL_AUTO_SEPARATOR_CLASS = "compact-empty-properties-reveal-auto-separator";
 export const TOGGLE_CLASS = "compact-empty-properties-toggle";
+export const CUSTOM_PROPERTY_ICON_CLASS = "cep-property-custom-icon";
+export const REORDER_BAR_CLASS = "compact-empty-properties-reorder-bar";
+export const REORDER_HANDLE_CLASS = "compact-empty-properties-reorder-handle";
+export const REORDER_DRAGGING_CLASS = "compact-empty-properties-reorder-dragging";
 
 export function getPropertyRows(container: HTMLElement): HTMLElement[] {
 	return Array.from(container.querySelectorAll<HTMLElement>(PROPERTY_ROW_SELECTOR));
@@ -24,6 +33,67 @@ export function getPropertyKey(row: HTMLElement): string | undefined {
 	const label = row.querySelector(`${PROPERTY_KEY_SELECTOR} label`);
 	const visibleKey = label?.textContent ?? row.querySelector(PROPERTY_KEY_SELECTOR)?.textContent;
 	return visibleKey?.trim() || undefined;
+}
+
+/**
+ * Finds the direct child of the Property key container that owns the native
+ * editable key control. Keeping CEP's icon beside that child prevents it
+ * from being inserted into an Obsidian-owned input/contenteditable wrapper.
+ */
+export function getPropertyKeyEditableAnchor(propertyKey: HTMLElement): HTMLElement | undefined {
+	const editable = propertyKey.querySelector<HTMLElement>("input, [contenteditable=true]");
+	if (!editable) {
+		return Array.from(propertyKey.children)
+			.find((child): child is HTMLElement =>
+				child instanceof HTMLElement &&
+				!child.matches(NATIVE_PROPERTY_ICON_SELECTOR) &&
+				!child.classList.contains(CUSTOM_PROPERTY_ICON_CLASS)
+			);
+	}
+
+	let anchor: HTMLElement = editable;
+	while (anchor.parentElement && anchor.parentElement !== propertyKey) {
+		anchor = anchor.parentElement;
+	}
+	return anchor;
+}
+
+/**
+ * Returns the direct child of the key container that owns Obsidian's native
+ * Property type icon. CEP never replaces this node; it only uses it as an
+ * ordering anchor for its own controls.
+ */
+export function getNativePropertyIconAnchor(propertyKey: HTMLElement): HTMLElement | undefined {
+	const nativeIcon = propertyKey.querySelector<HTMLElement>(NATIVE_PROPERTY_ICON_SELECTOR);
+	if (!nativeIcon) return undefined;
+
+	let anchor: HTMLElement = nativeIcon;
+	while (anchor.parentElement && anchor.parentElement !== propertyKey) {
+		anchor = anchor.parentElement;
+	}
+	return anchor.parentElement === propertyKey ? anchor : undefined;
+}
+
+/**
+ * Finds the insertion point for CEP's decorative icon. With Obsidian's native
+ * icon present, the result is after that icon and before the editable key
+ * control. Without a native icon, it remains immediately before the editable
+ * control (or the first child fallback used by older DOM variants).
+ */
+export function getCustomPropertyIconAnchor(propertyKey: HTMLElement): HTMLElement | undefined {
+	const nativeIcon = getNativePropertyIconAnchor(propertyKey);
+	const editable = getPropertyKeyEditableAnchor(propertyKey);
+	if (!nativeIcon) return editable;
+
+	const children = Array.from(propertyKey.children);
+	const nativeIndex = children.indexOf(nativeIcon);
+	const editableIndex = editable ? children.indexOf(editable) : -1;
+	if (editableIndex > nativeIndex) return editable;
+	return children
+		.slice(nativeIndex + 1)
+		.find((child): child is HTMLElement =>
+			child instanceof HTMLElement && !child.classList.contains(CUSTOM_PROPERTY_ICON_CLASS)
+		);
 }
 
 export function getDomValueState(row: HTMLElement): DomValueState {

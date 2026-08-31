@@ -2,13 +2,13 @@
 
 # Compact Empty Properties
 
-在 Obsidian 的 Properties / 笔记属性界面中自动折叠空属性，但不会删除或修改 YAML / frontmatter。
+在 Obsidian 的 Properties / 笔记属性界面中自动折叠空属性；除非用户明确选择删除属性，否则不会修改 YAML / frontmatter。
 
 Compact Empty Properties 是一个轻量级 Obsidian 插件。
 
 它会在笔记属性（Properties）界面中自动隐藏没有内容的属性，让使用模板、结构化笔记或大量可选字段的笔记保持简洁。
 
-**它只改变显示，不修改你的 Markdown 或 YAML 数据。**
+Hide / Show / Reveal 只改变显示，不修改你的 Markdown 或 YAML 数据；Property 菜单中的“Delete from this note”是明确的删除操作。
 
 ## 为什么需要它？
 
@@ -47,11 +47,19 @@ Obsidian 的 Properties 界面可能会把这些字段全部显示出来。插�
 - 保留 `false`
 - 保留 `0`
 - 保留非空字符串、数组和对象
-- 提供轻量的 `显示空属性 (N)` / `隐藏空属性` 控件
+- 默认继续自动隐藏空 Property，并支持在 Settings 中设置 Vault-wide 的 Auto / Show / Hide
+- 支持 Note、Folder、Vault 三层 visibility rule，优先级为 Note > 最具体 Folder > Vault > Auto
+- macOS 使用 Option + click Property name，Windows/Linux 使用 Alt + click Property name
+- 可以选择 Hide / Show in this note、folder、vault
+- Option/Alt + click 菜单还提供紧凑的 “Reorder properties…” 入口，可选择 This folder 或 This vault，再通过拖拽和 Done 修改 UI 顺序
+- Settings 提供按 Property name 设置 Vault-wide 装饰性 custom icon 的 searchable picker
+- 提供 `显示隐藏属性 (N)` 临时 reveal 控件
+- Settings 提供 Scoped rules manager，可搜索并 Reset note/folder rule
 - 正在 focus、编辑或刚刚新建的属性不会在输入过程中消失
 - 切换 Note 时重新计算当前 Note 的空属性
 - 兼容 Light / Dark theme
 - 适用于普通 Markdown 笔记，不依赖特定 schema
+- Property 菜单提供“Delete from this note”，通过 Obsidian 公共 API 删除当前 Note 的顶层 frontmatter key
 
 ## 空值规则
 
@@ -74,12 +82,16 @@ Obsidian 的 Properties 界面可能会把这些字段全部显示出来。插�
 点击：
 
 ```text
-显示空属性 (N)
+显示隐藏属性 (N)
 ```
 
-即可临时显示当前 Note 的全部空属性。再次点击 `隐藏空属性`，即可恢复折叠状态。
+即可临时显示当前 Note 中被 Auto empty-property 逻辑或 Note / Folder / Vault rule 隐藏的 Property。再次点击 `隐藏属性`，即可恢复规则。
 
-这个控件只改变当前 UI，不会创建、删除或修改任何 property。
+这个控件只改变当前 UI，不会创建、删除或修改任何 Property 或 visibility rule。对 Property 使用 Option/Alt + click 后，可以选择“Delete from this note”来删除当前 Markdown Note 中对应的顶层 frontmatter key。
+
+在 **设置 → Compact Empty Properties → Property visibility** 中管理 Vault-wide 规则。要快速修改当前 Property，可在 macOS 按住 Option 点击 Property name，或在 Windows/Linux 按住 Alt 点击 Property name，然后选择在当前 Note、Folder 或 Vault 中 Hide / Show。Scoped rule 的 Reset 在 Settings 的 **Scoped rules** 区域完成，用于恢复继承。
+
+要调整 Property 的 UI 顺序，可以使用 Command Palette 的 **Reorder properties**，或从 Option/Alt + click 菜单选择 **Reorder properties…**。选择 This folder 或 This vault，拖动 handle，完成后点击 Done。顺序只保存到插件自己的 settings，不会写入 YAML/frontmatter。custom icon 在 **Settings → Compact Empty Properties → Property icons** 中配置；图标来自 Obsidian 运行时提供的图标列表，也可以 Reset 回 native/default。
 
 ## 编辑安全
 
@@ -100,7 +112,7 @@ Obsidian 的 Properties 界面可能会把这些字段全部显示出来。插�
 - 不修改字段顺序
 - 不修改字段名称
 - 不替换 Obsidian 原生 Properties editor
-- 不扫描整个 Vault
+- 不建立独立的内容索引；Settings 中的 Property 列表读取 Obsidian metadata
 - 不建立 Vault-wide index
 - 不处理 Reading View
 
@@ -126,20 +138,20 @@ styles.css
 
 ## 设置
 
-插件提供一个简单设置：
+插件提供以下设置：
 
 ```text
 Hide empty properties
 ```
 
-关闭后，Properties 会按 Obsidian 原生方式显示。设置只保存为插件自己的 settings data，不会写入 Markdown。
+关闭后，Auto Property 会按 Obsidian 原生方式显示；Show / Hide 规则仍按规则生效。Property visibility 用于 Vault-wide 规则，Scoped rules 用于查看、搜索和 Reset Note / Folder rule。设置只保存为插件自己的 settings data，不会写入 Markdown。
 
 ## 隐私与数据安全
 
 - 不发起网络请求
 - 不写入 Markdown 或 YAML
 - 不修改 Vault 笔记内容
-- 不扫描整个 Vault
+- 不建立独立的内容索引；Settings 中的 Property 列表读取 Obsidian metadata
 - 只处理当前打开的 Markdown view 中已显示的 Properties UI
 - 不读取或修改其他插件的数据
 
@@ -157,7 +169,7 @@ DOM 与生命周期说明见 [`docs/dom-audit.md`](docs/dom-audit.md)。
 
 ## 版本
 
-当前版本：`0.1.1`
+当前版本：`0.2.0`
 
 插件 ID：`compact-empty-properties`
 

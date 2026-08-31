@@ -16,6 +16,7 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
+    "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
     "importHelpers": false,
     "isolatedModules": true,

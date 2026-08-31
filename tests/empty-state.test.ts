@@ -39,8 +39,8 @@ test("ten empty rows produce the requested count and toggle labels", () => {
 	const rows = Array.from({ length: 10 }, (_, index) => ({ id: `row-${index}`, value: [] }));
 	assert.equal(emptyRowCount(rows), 10);
 	assert.equal(hiddenRowIds(rows, true, false).length, 10);
-	assert.equal(toggleText(false, 10), "显示空属性 (10)");
-	assert.equal(toggleText(true, 0), "隐藏空属性");
+	assert.equal(toggleText(false, 10), "显示隐藏属性 (10)");
+	assert.equal(toggleText(true, 0), "隐藏属性");
 });
 
 test("toggle expansion reveals all empty rows and collapses again", () => {
