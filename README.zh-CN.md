@@ -106,7 +106,7 @@ Obsidian 的 Properties 界面可能会把这些字段全部显示出来。插�
 
 ## 它不会做什么？
 
-- 不删除 frontmatter 字段
+- 不会自动删除 frontmatter 字段；明确的 “Delete from this note” 操作除外
 - 不删除空数组或空对象
 - 不重写 YAML
 - 不修改字段顺序
@@ -149,8 +149,8 @@ Hide empty properties
 ## 隐私与数据安全
 
 - 不发起网络请求
-- 不写入 Markdown 或 YAML
-- 不修改 Vault 笔记内容
+- Visibility、Reveal、custom icon 和 Property order 只影响 UI，不写入 Markdown 或 YAML
+- 只有用户明确选择 “Delete from this note” 时，插件才会通过 Obsidian 公共 API 删除当前 Note 的顶层 frontmatter key
 - 不建立独立的内容索引；Settings 中的 Property 列表读取 Obsidian metadata
 - 只处理当前打开的 Markdown view 中已显示的 Properties UI
 - 不读取或修改其他插件的数据

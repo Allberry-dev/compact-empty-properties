@@ -28,4 +28,4 @@ The adapter recognizes common empty-state hints (`.is-empty`, `.metadata-propert
 
 ## Data boundary
 
-The plugin does not parse, serialize, reorder, or write frontmatter. It does not call `Vault.modify` or `processFrontMatter`, does not scan the Vault, and does not depend on any note schema.
+Visibility, Reveal, custom icons, and UI ordering do not parse, serialize, reorder, or write frontmatter. Settings does read the Vault's Markdown-file list and each file's cached metadata to build the Property-name list; this is read-only and does not create a separate content index. The explicit `Delete from this note` action uses `app.fileManager.processFrontMatter()` after the user selects it. The plugin does not call `Vault.modify` or `Vault.process`, and does not depend on any note schema.
