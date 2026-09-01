@@ -55,6 +55,7 @@ Obsidian 的 Properties 界面可能会把这些字段全部显示出来。插�
 - Settings 提供按 Property name 设置 Vault-wide 装饰性 custom icon 的 searchable picker
 - 提供 `显示隐藏属性 (N)` 临时 reveal 控件
 - Settings 提供 Scoped rules manager，可搜索并 Reset note/folder rule
+- 兼容 Obsidian 1.13+ Settings Search
 - 正在 focus、编辑或刚刚新建的属性不会在输入过程中消失
 - 切换 Note 时重新计算当前 Note 的空属性
 - 兼容 Light / Dark theme
@@ -169,7 +170,7 @@ DOM 与生命周期说明见 [`docs/dom-audit.md`](docs/dom-audit.md)。
 
 ## 版本
 
-当前版本：`0.2.0`
+当前版本：`0.2.1`
 
 插件 ID：`compact-empty-properties`
 

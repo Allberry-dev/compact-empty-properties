@@ -121,7 +121,10 @@ test("S1 lifecycle work is coalesced without starvation and failures are contain
 	assert.match(source, /context\.initialized && isRowEditing\(row\)/);
 	assert.match(source, /NEW_PROPERTY_GRACE_MS/);
 	assert.match(source, /creationGraceUntil/);
-	assert.match(source, /typeof \(target as Element\)\.closest !== "function"/);
+	assert.match(source, /isDomHTMLElement\(target\)/);
+	assert.match(domAdapter, /export function isDomHTMLElement/);
+	assert.doesNotMatch(source, /instanceof HTMLElement|instanceof Node/);
+	assert.doesNotMatch(domAdapter, /instanceof HTMLElement|instanceof Node/);
 	assert.match(source, /private setRevealState\(state: ViewState, value: boolean\)/);
 	assert.match(source, /Map<WorkspaceLeaf, ViewState>/);
 	assert.match(source, /hasNativePropertyInteraction/);
@@ -140,6 +143,16 @@ test("theme styling uses Obsidian variables and remains lightweight", () => {
 	assert.match(styles, /var\(--background-modifier-border\)/);
 	assert.doesNotMatch(styles, /#[0-9a-f]{3,8}/i);
 	assert.doesNotMatch(styles, /position:\s*(fixed|absolute)/);
+});
+
+test("scanner cleanup keeps settings searchable and DOM creation cross-window safe", () => {
+	assert.match(source, /getSettingDefinitions\(\): SettingDefinitionItem\[\]/);
+	assert.match(source, /createEl\(/);
+	assert.match(source, /createDiv\(/);
+	assert.match(source, /createSpan\(/);
+	assert.doesNotMatch(source, /ownerDocument\.createElement/);
+	assert.doesNotMatch(domAdapter, /instanceof HTMLElement|instanceof Node/);
+	assert.doesNotMatch(styles, /!important/);
 });
 
 test("property icons use an independent decorative sibling and public icon APIs", () => {

@@ -20,6 +20,7 @@ Templates and structured note systems often contain many optional properties. Co
 - Provides Vault-wide decorative Property icons with a searchable runtime icon picker
 - Provides a lightweight `Show hidden properties (N)` reveal toggle
 - Provides a Scoped rules manager in Settings for searching and resetting note/folder rules
+- Exposes the plugin settings through Obsidian 1.13+ Settings Search
 - Protects focused, edited, and newly created rows while typing
 - Recalculates safely when switching notes or when Properties DOM is replaced
 - Works with regular Markdown notes

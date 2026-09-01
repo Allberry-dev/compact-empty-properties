@@ -84,7 +84,7 @@ export function setVaultPropertyOrder<T extends PropertyOrderSettings>(
 		...settings,
 		propertyOrder: mergeKnownOrder(settings.propertyOrder, order),
 		scopedPropertyOrder: cloneScopedPropertyOrder(settings.scopedPropertyOrder)
-	} as T;
+	};
 }
 
 export function resetVaultPropertyOrder<T extends PropertyOrderSettings>(settings: T): T {
@@ -92,7 +92,7 @@ export function resetVaultPropertyOrder<T extends PropertyOrderSettings>(setting
 		...settings,
 		propertyOrder: [],
 		scopedPropertyOrder: cloneScopedPropertyOrder(settings.scopedPropertyOrder)
-	} as T;
+	};
 }
 
 export function setFolderPropertyOrder<T extends PropertyOrderSettings>(
@@ -108,7 +108,7 @@ export function setFolderPropertyOrder<T extends PropertyOrderSettings>(
 		...settings,
 		propertyOrder: [...settings.propertyOrder],
 		scopedPropertyOrder: { folders }
-	} as T;
+	};
 }
 
 export function resetFolderPropertyOrder<T extends PropertyOrderSettings>(
@@ -123,7 +123,7 @@ export function resetFolderPropertyOrder<T extends PropertyOrderSettings>(
 		...settings,
 		propertyOrder: [...settings.propertyOrder],
 		scopedPropertyOrder: { folders }
-	} as T;
+	};
 }
 
 export function migrateFolderPropertyOrder<T extends PropertyOrderSettings>(
@@ -156,7 +156,7 @@ export function migrateFolderPropertyOrder<T extends PropertyOrderSettings>(
 			...settings,
 			propertyOrder: [...settings.propertyOrder],
 			scopedPropertyOrder: { folders }
-		} as T,
+		},
 		changed: true
 	};
 }
@@ -187,7 +187,7 @@ function clonePropertyOrderSettings<T extends PropertyOrderSettings>(settings: T
 		...settings,
 		propertyOrder: [...settings.propertyOrder],
 		scopedPropertyOrder: cloneScopedPropertyOrder(settings.scopedPropertyOrder)
-	} as T;
+	};
 }
 
 function cloneScopedPropertyOrder(

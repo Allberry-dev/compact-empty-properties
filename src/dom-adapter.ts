@@ -21,6 +21,17 @@ export const REORDER_BAR_CLASS = "compact-empty-properties-reorder-bar";
 export const REORDER_HANDLE_CLASS = "compact-empty-properties-reorder-handle";
 export const REORDER_DRAGGING_CLASS = "compact-empty-properties-reorder-dragging";
 
+/**
+ * DOM nodes can come from a Markdown view's window rather than the plugin's
+ * global window. Use structural checks so cross-window elements are accepted.
+ */
+export function isDomHTMLElement(value: unknown): value is HTMLElement {
+	if (typeof value !== "object" || value === null) return false;
+	if (!("nodeType" in value) || value.nodeType !== 1) return false;
+	if (!("classList" in value) || !("matches" in value)) return false;
+	return typeof value.matches === "function";
+}
+
 export function getPropertyRows(container: HTMLElement): HTMLElement[] {
 	return Array.from(container.querySelectorAll<HTMLElement>(PROPERTY_ROW_SELECTOR));
 }
@@ -45,7 +56,7 @@ export function getPropertyKeyEditableAnchor(propertyKey: HTMLElement): HTMLElem
 	if (!editable) {
 		return Array.from(propertyKey.children)
 			.find((child): child is HTMLElement =>
-				child instanceof HTMLElement &&
+				isDomHTMLElement(child) &&
 				!child.matches(NATIVE_PROPERTY_ICON_SELECTOR) &&
 				!child.classList.contains(CUSTOM_PROPERTY_ICON_CLASS)
 			);
@@ -92,7 +103,7 @@ export function getCustomPropertyIconAnchor(propertyKey: HTMLElement): HTMLEleme
 	return children
 		.slice(nativeIndex + 1)
 		.find((child): child is HTMLElement =>
-			child instanceof HTMLElement && !child.classList.contains(CUSTOM_PROPERTY_ICON_CLASS)
+			isDomHTMLElement(child) && !child.classList.contains(CUSTOM_PROPERTY_ICON_CLASS)
 		);
 }
 
@@ -159,7 +170,7 @@ export function isRowEmpty(
 export function isRowEditing(row: HTMLElement): boolean {
 	if (row.dataset.cepEditing === "true") return true;
 	const activeElement = row.ownerDocument.activeElement;
-	return activeElement instanceof Node && row.contains(activeElement);
+	return activeElement !== null && row.contains(activeElement);
 }
 
 function isStructuredValue(value: unknown): boolean {

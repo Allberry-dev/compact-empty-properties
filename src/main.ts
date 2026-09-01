@@ -12,6 +12,7 @@ import {
 	TFile,
 	TFolder,
 	type IconName,
+	type SettingDefinitionItem,
 	type TAbstractFile,
 	type WorkspaceLeaf
 } from "obsidian";
@@ -21,6 +22,7 @@ import {
 	getPropertyKeyEditableAnchor,
 	getNativePropertyIconAnchor,
 	getPropertyRows,
+	isDomHTMLElement,
 	isRowEditing,
 	isRowEmpty,
 	HIDDEN_CLASS,
@@ -73,8 +75,7 @@ import {
 	resetFolderPropertyOrder,
 	resetVaultPropertyOrder,
 	setFolderPropertyOrder,
-	setVaultPropertyOrder,
-	type PropertyOrderSettings
+	setVaultPropertyOrder
 } from "./property-order";
 
 interface RowState {
@@ -90,7 +91,7 @@ interface ViewState {
 	root: HTMLElement;
 	noteKey: string;
 	generation: GenerationToken;
-	rootObserver: MutationObserver;
+	rootObserver?: MutationObserver;
 	resolveFrame: number | undefined;
 	retryCount: number;
 	revealed: boolean;
@@ -175,6 +176,10 @@ const NEW_PROPERTY_GRACE_MS = 800;
 
 function reportError(message: string, error: unknown): void {
 	console.error(`Compact Empty Properties: ${message}`, error);
+}
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export default class CompactEmptyPropertiesPlugin extends Plugin {
@@ -475,14 +480,15 @@ class PropertiesController {
 			existing.view = view;
 			if (previousRoot === view.containerEl) return existing;
 
-			existing.rootObserver.disconnect();
+			existing.rootObserver?.disconnect();
 			this.cancelResolve(existing);
 			for (const context of Array.from(existing.contexts.values())) this.destroyContext(context);
 			existing.root = view.containerEl;
 			existing.generation.invalidate();
 			existing.retryCount = 0;
-			existing.rootObserver = this.createRootObserver(existing);
-			existing.rootObserver.observe(existing.root, { childList: true, subtree: true });
+			const rootObserver = this.createRootObserver(existing);
+			existing.rootObserver = rootObserver;
+			rootObserver.observe(existing.root, { childList: true, subtree: true });
 			return existing;
 		}
 
@@ -493,16 +499,17 @@ class PropertiesController {
 			root: view.containerEl,
 			noteKey: this.getNoteKey(view),
 			generation: new GenerationToken(),
-			rootObserver: undefined as unknown as MutationObserver,
+			rootObserver: undefined,
 			resolveFrame: undefined,
 			retryCount: 0,
 			revealed: false,
 			reorderSession: undefined,
 			contexts: new Map()
 		};
-		state.rootObserver = this.createRootObserver(state);
+		const rootObserver = this.createRootObserver(state);
+		state.rootObserver = rootObserver;
 		this.viewStates.set(leaf, state);
-		state.rootObserver.observe(state.root, { childList: true, subtree: true });
+		rootObserver.observe(state.root, { childList: true, subtree: true });
 		return state;
 	}
 
@@ -914,7 +921,7 @@ class PropertiesController {
 		if (customIcon.dataset.iconId === iconId && customIcon.querySelector("svg")) return;
 
 		while (customIcon.firstChild) customIcon.removeChild(customIcon.firstChild);
-		setIcon(customIcon, iconId as IconName);
+		setIcon(customIcon, iconId);
 		customIcon.dataset.iconId = iconId;
 	}
 
@@ -922,7 +929,7 @@ class PropertiesController {
 		const propertyKey = row.querySelector<HTMLElement>(PROPERTY_KEY_SELECTOR);
 		if (!propertyKey) return undefined;
 
-		const customIcon = propertyKey.ownerDocument.createElement("span");
+		const customIcon = propertyKey.createEl("span");
 		customIcon.className = CUSTOM_PROPERTY_ICON_CLASS;
 		customIcon.setAttribute("aria-hidden", "true");
 		customIcon.setAttribute("data-cep-custom-icon", "true");
@@ -968,9 +975,9 @@ class PropertiesController {
 		const resolvedNames = reorderSession?.active
 			? reorderSession.draftOrder
 			: resolvePropertyOrder(
-				this.plugin.settings as PropertyOrderSettings,
-				context.state.noteKey,
-				nativeNames
+					this.plugin.settings,
+					context.state.noteKey,
+					nativeNames
 			);
 		const recordByName = new Map<string, RowRecord>();
 		for (const record of nativeRecords) {
@@ -1071,13 +1078,13 @@ class PropertiesController {
 		row: HTMLElement,
 		propertyKey: HTMLElement
 	): HTMLButtonElement {
-		const handle = propertyKey.ownerDocument.createElement("button");
+		const handle = propertyKey.createEl("button");
 		handle.type = "button";
 		handle.className = REORDER_HANDLE_CLASS;
 		handle.setAttribute("aria-label", "Reorder property");
 		handle.setAttribute("title", "Drag to reorder. Use Arrow Up or Arrow Down to move.");
 		handle.setAttribute("draggable", "false");
-		setIcon(handle, "grip-vertical" as IconName);
+		setIcon(handle, "grip-vertical");
 		handle.addEventListener("pointerdown", (event) => {
 			this.beginReorderDrag(context, row, handle, event);
 		});
@@ -1298,11 +1305,11 @@ class PropertiesController {
 
 		const rowSet = new Set(rows);
 		const currentRows = Array.from(parent.children)
-			.filter((child): child is HTMLElement => child instanceof HTMLElement && rowSet.has(child));
+			.filter((child): child is HTMLElement => isDomHTMLElement(child) && rowSet.has(child));
 		if (currentRows.length !== rows.length || currentRows.every((row, index) => row === rows[index])) return;
 
 		const anchor = Array.from(parent.children).find((child) =>
-			!rowSet.has(child as HTMLElement) && !this.isRevealMarker(child)
+			(!isDomHTMLElement(child) || !rowSet.has(child)) && !this.isRevealMarker(child)
 		) ?? parent.querySelector<HTMLElement>(`.${REVEAL_SEPARATOR_CLASS}`);
 		for (const row of rows) {
 			if (anchor) parent.insertBefore(row, anchor);
@@ -1357,7 +1364,7 @@ class PropertiesController {
 	): void {
 		let marker = context[kind];
 		if (!marker || !marker.isConnected) {
-			marker = context.container.ownerDocument.createElement("div");
+			marker = context.container.createDiv();
 			marker.className = className;
 			if (withRole) marker.setAttribute("role", "separator");
 			marker.setAttribute("aria-label", labelText);
@@ -1401,9 +1408,9 @@ class PropertiesController {
 		}
 
 		const label = toggleText(context.state.revealed, hiddenCount);
-		let toggle = context.toggle;
-		if (!toggle || !toggle.isConnected) {
-			toggle = context.container.ownerDocument.createElement("button");
+			let toggle = context.toggle;
+			if (!toggle || !toggle.isConnected) {
+				toggle = context.container.createEl("button");
 				toggle.type = "button";
 				toggle.className = TOGGLE_CLASS;
 				toggle.setAttribute("aria-live", "polite");
@@ -1415,7 +1422,7 @@ class PropertiesController {
 					this.setRevealState(context.state, nextRevealed);
 					this.evaluateContext(context, context.generation);
 					if (!nextRevealed) context.originalRowOrder = undefined;
-			});
+				});
 			context.toggle = toggle;
 			const nativeAddButton = Array.from(context.container.querySelectorAll<HTMLElement>(".metadata-add-button"))
 				.find((element) => element.parentElement === context.container);
@@ -1437,20 +1444,18 @@ class PropertiesController {
 
 		let bar = context.reorderBar;
 		if (!bar || !bar.isConnected) {
-			bar = context.container.ownerDocument.createElement("div");
+			bar = context.container.createDiv();
 			bar.className = REORDER_BAR_CLASS;
-			const label = context.container.ownerDocument.createElement("span");
-			label.className = `${REORDER_BAR_CLASS}-label`;
-			bar.appendChild(label);
-			const done = context.container.ownerDocument.createElement("button");
-			done.type = "button";
-			done.textContent = "Done";
+				const label = bar.createSpan();
+				label.className = `${REORDER_BAR_CLASS}-label`;
+				const done = bar.createEl("button");
+				done.type = "button";
+				done.textContent = "Done";
 				done.addEventListener("click", (event) => {
 					event.preventDefault();
 					event.stopPropagation();
 					void this.commitReorderMode(context);
 				});
-			bar.appendChild(done);
 			context.reorderBar = bar;
 			const nativeAddButton = Array.from(context.container.querySelectorAll<HTMLElement>(".metadata-add-button"))
 				.find((element) => element.parentElement === context.container);
@@ -1686,13 +1691,13 @@ class PropertiesController {
 	}
 
 	private findRow(target: EventTarget | null): HTMLElement | undefined {
-		if (!target || typeof (target as Element).closest !== "function") return undefined;
-		return (target as Element).closest<HTMLElement>(PROPERTY_ROW_SELECTOR) ?? undefined;
+		if (!isDomHTMLElement(target)) return undefined;
+		return target.closest<HTMLElement>(PROPERTY_ROW_SELECTOR) ?? undefined;
 	}
 
 	private findPropertyKey(target: EventTarget | null): HTMLElement | undefined {
-		if (!target || typeof (target as Element).closest !== "function") return undefined;
-		return (target as Element).closest<HTMLElement>(PROPERTY_KEY_SELECTOR) ?? undefined;
+		if (!isDomHTMLElement(target)) return undefined;
+		return target.closest<HTMLElement>(PROPERTY_KEY_SELECTOR) ?? undefined;
 	}
 
 	private getRowVisibility(context: MetadataContext, row: HTMLElement): PropertyVisibility {
@@ -1705,8 +1710,8 @@ class PropertiesController {
 
 	private getCachedValue(file: TFile | null, key: string): { found: boolean; value: unknown } {
 		if (!file) return { found: false, value: undefined };
-		const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined;
-		if (!frontmatter || !Object.prototype.hasOwnProperty.call(frontmatter, key)) {
+		const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+		if (!isUnknownRecord(frontmatter) || !Object.prototype.hasOwnProperty.call(frontmatter, key)) {
 			return { found: false, value: undefined };
 		}
 		return { found: true, value: frontmatter[key] };
@@ -1747,7 +1752,7 @@ class PropertiesController {
 		if (!state) return;
 		this.setRevealState(state, false);
 		this.cancelResolve(state);
-		state.rootObserver.disconnect();
+		state.rootObserver?.disconnect();
 		state.reorderSession = undefined;
 		for (const context of Array.from(state.contexts.values())) this.destroyContext(context);
 		this.viewStates.delete(leaf);
@@ -1823,18 +1828,18 @@ class PropertyIconPickerModal extends Modal {
 		const contentEl = this.contentEl;
 		while (contentEl.firstChild) contentEl.removeChild(contentEl.firstChild);
 
-		this.iconIds = Array.from(new Set(getIconIds().map((iconId) => String(iconId) as IconName)))
+		this.iconIds = Array.from(new Set(getIconIds()))
 			.filter((iconId) => getIcon(iconId) !== null)
 			.sort((left, right) => left.localeCompare(right));
 
-		const search = contentEl.ownerDocument.createElement("input");
+		const search = contentEl.createEl("input");
 		search.type = "search";
 		search.className = "compact-empty-properties-icon-search";
 		search.placeholder = "Search icons...";
 		search.setAttribute("aria-label", "Search icons");
 		contentEl.appendChild(search);
 
-		const reset = contentEl.ownerDocument.createElement("button");
+		const reset = contentEl.createEl("button");
 		reset.type = "button";
 		reset.className = "compact-empty-properties-icon-reset";
 		reset.textContent = "Reset to native/default";
@@ -1844,7 +1849,7 @@ class PropertyIconPickerModal extends Modal {
 		});
 		contentEl.appendChild(reset);
 
-		const resultEl = contentEl.ownerDocument.createElement("div");
+		const resultEl = contentEl.createDiv();
 		resultEl.className = "compact-empty-properties-icon-results";
 		resultEl.setAttribute("role", "listbox");
 		contentEl.appendChild(resultEl);
@@ -1855,38 +1860,35 @@ class PropertyIconPickerModal extends Modal {
 			const matches = this.iconIds.filter((iconId) => iconId.toLocaleLowerCase().includes(query));
 			const limit = query ? 240 : 120;
 			for (const iconId of matches.slice(0, limit)) {
-				const item = contentEl.ownerDocument.createElement("button");
+				const item = resultEl.createEl("button");
 				item.type = "button";
 				item.className = "compact-empty-properties-icon-option";
 				item.setAttribute("role", "option");
 				item.setAttribute("aria-label", iconId);
 
-				const preview = contentEl.ownerDocument.createElement("span");
+				const preview = item.createSpan();
 				preview.className = "compact-empty-properties-icon-preview";
 				preview.setAttribute("aria-hidden", "true");
 				setIcon(preview, iconId);
 				item.appendChild(preview);
 
-				const label = contentEl.ownerDocument.createElement("span");
+				const label = item.createSpan();
 				label.textContent = iconId;
 				item.appendChild(label);
 				item.addEventListener("click", () => {
 					this.onSelect(iconId);
 					this.close();
 				});
-				resultEl.appendChild(item);
 			}
 
 			if (matches.length === 0) {
-				const empty = contentEl.ownerDocument.createElement("div");
+				const empty = resultEl.createDiv();
 				empty.className = "compact-empty-properties-visibility-empty";
 				empty.textContent = "No matching icons.";
-				resultEl.appendChild(empty);
 			} else if (matches.length > limit) {
-				const hint = contentEl.ownerDocument.createElement("div");
+				const hint = resultEl.createDiv();
 				hint.className = "compact-empty-properties-icon-results-hint";
 				hint.textContent = `Showing ${limit} of ${matches.length}. Refine your search.`;
-				resultEl.appendChild(hint);
 			}
 		};
 
@@ -1894,14 +1896,12 @@ class PropertyIconPickerModal extends Modal {
 		renderResults();
 		window.setTimeout(() => search.focus(), 0);
 
-		const footer = contentEl.ownerDocument.createElement("div");
+		const footer = contentEl.createDiv();
 		footer.className = "compact-empty-properties-icon-footer";
-		const cancel = contentEl.ownerDocument.createElement("button");
+		const cancel = footer.createEl("button");
 		cancel.type = "button";
 		cancel.textContent = "Cancel";
 		cancel.addEventListener("click", () => this.close());
-		footer.appendChild(cancel);
-		contentEl.appendChild(footer);
 	}
 
 	onClose(): void {
@@ -1925,8 +1925,26 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 		super(app, plugin);
 	}
 
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [{
+			name: "Compact Empty Properties",
+			desc: "Hide, reveal, customize, and reorder Properties without changing Markdown.",
+			aliases: [
+				"Hide empty properties",
+				"Property visibility",
+				"Property icons",
+				"Property order",
+				"Scoped rules"
+			],
+			render: (setting) => this.renderImperativeSettings(setting.settingEl)
+		}];
+	}
+
 	display(): void {
-		const { containerEl } = this;
+		this.renderImperativeSettings(this.containerEl);
+	}
+
+	private renderImperativeSettings(containerEl: HTMLElement): void {
 		containerEl.empty();
 		new Setting(containerEl)
 			.setName("Hide empty properties")
@@ -1950,9 +1968,7 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 					this.renderPropertyRows();
 				}));
 
-		this.propertyListEl = containerEl.ownerDocument.createElement("div");
-		this.propertyListEl.className = "compact-empty-properties-visibility-list";
-		containerEl.appendChild(this.propertyListEl);
+		this.propertyListEl = containerEl.createDiv({ cls: "compact-empty-properties-visibility-list" });
 
 		new Setting(containerEl)
 			.setName("Property icons")
@@ -1969,9 +1985,7 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 					this.renderIconRows();
 				}));
 
-		this.iconListEl = containerEl.ownerDocument.createElement("div");
-		this.iconListEl.className = "compact-empty-properties-icon-list";
-		containerEl.appendChild(this.iconListEl);
+		this.iconListEl = containerEl.createDiv({ cls: "compact-empty-properties-icon-list" });
 
 		new Setting(containerEl)
 			.setName("Property order")
@@ -1988,9 +2002,7 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 					this.refreshOrderRules();
 				}));
 
-		this.orderListEl = containerEl.ownerDocument.createElement("div");
-		this.orderListEl.className = "compact-empty-properties-order-list";
-		containerEl.appendChild(this.orderListEl);
+		this.orderListEl = containerEl.createDiv({ cls: "compact-empty-properties-order-list" });
 
 		new Setting(containerEl)
 			.setName("Scoped rules")
@@ -2007,9 +2019,7 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 					this.refreshScopedRules();
 				}));
 
-		this.scopedListEl = containerEl.ownerDocument.createElement("div");
-		this.scopedListEl.className = "compact-empty-properties-scoped-list";
-		containerEl.appendChild(this.scopedListEl);
+		this.scopedListEl = containerEl.createDiv({ cls: "compact-empty-properties-scoped-list" });
 		this.refreshAll();
 	}
 
@@ -2051,10 +2061,9 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 			.sort(([left], [right]) => left.localeCompare(right));
 
 		if (!vaultMatches && folderEntries.length === 0) {
-			const emptyState = listEl.ownerDocument.createElement("div");
+			const emptyState = listEl.createDiv();
 			emptyState.className = "compact-empty-properties-visibility-empty";
 			emptyState.textContent = query ? "No matching property orders." : "No property orders.";
-			listEl.appendChild(emptyState);
 			return;
 		}
 
@@ -2107,10 +2116,9 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 				left.propertyName.localeCompare(right.propertyName)
 			);
 		if (filtered.length === 0) {
-			const emptyState = listEl.ownerDocument.createElement("div");
+			const emptyState = listEl.createDiv();
 			emptyState.className = "compact-empty-properties-visibility-empty";
 			emptyState.textContent = query ? "No matching scoped rules." : "No scoped rules.";
-			listEl.appendChild(emptyState);
 			return;
 		}
 
@@ -2146,12 +2154,11 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 			propertyName.toLocaleLowerCase().includes(query)
 		);
 		if (propertyNames.length === 0) {
-			const emptyState = listEl.ownerDocument.createElement("div");
+			const emptyState = listEl.createDiv();
 			emptyState.className = "compact-empty-properties-visibility-empty";
 			emptyState.textContent = query
 				? "No matching properties."
 				: "No properties found in the current Vault.";
-			listEl.appendChild(emptyState);
 			return;
 		}
 
@@ -2168,12 +2175,11 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 			propertyName.toLocaleLowerCase().includes(query)
 		);
 		if (propertyNames.length === 0) {
-			const emptyState = listEl.ownerDocument.createElement("div");
+			const emptyState = listEl.createDiv();
 			emptyState.className = "compact-empty-properties-visibility-empty";
 			emptyState.textContent = query
 				? "No matching properties."
 				: "No properties found in the current Vault.";
-			listEl.appendChild(emptyState);
 			return;
 		}
 
@@ -2186,11 +2192,10 @@ class CompactEmptyPropertiesSettingTab extends PluginSettingTab {
 			.setName(propertyName)
 			.setClass("compact-empty-properties-icon-row");
 
-		const preview = listEl.ownerDocument.createElement("span");
+		const preview = setting.controlEl.createSpan();
 		preview.className = "compact-empty-properties-icon-preview";
 		preview.setAttribute("aria-hidden", "true");
-		if (iconId && getIcon(iconId) !== null) setIcon(preview, iconId as IconName);
-		setting.controlEl.appendChild(preview);
+		if (iconId && getIcon(iconId) !== null) setIcon(preview, iconId);
 
 		setting.addButton((button) => button
 			.setButtonText("Change")

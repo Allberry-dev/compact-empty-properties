@@ -1,6 +1,6 @@
 /* Only classes owned by Compact Empty Properties are styled. */
-.metadata-container .compact-empty-properties-hidden {
-	display: none !important;
+.metadata-container .metadata-property.compact-empty-properties-hidden {
+	display: none;
 }
 
 .metadata-container .compact-empty-properties-reveal-separator {

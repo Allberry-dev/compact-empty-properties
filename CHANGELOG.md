@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1
+
+### Maintenance
+
+- Improved compatibility with Obsidian 1.13+ Settings Search and cross-window Properties DOMs.
+- Use Obsidian DOM helpers for plugin-created settings and controls.
+- Removed unnecessary type assertions and an avoidable CSS priority override.
+
 ## 0.2.0
 
 ### Added
