@@ -170,7 +170,7 @@ DOM 与生命周期说明见 [`docs/dom-audit.md`](docs/dom-audit.md)。
 
 ## 版本
 
-当前版本：`0.2.1`
+当前版本：`0.2.2`
 
 插件 ID：`compact-empty-properties`
 

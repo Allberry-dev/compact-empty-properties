@@ -1,4 +1,18 @@
 /* Only classes owned by Compact Empty Properties are styled. */
+
+/*
+ * Obsidian renders a SettingDefinition `render` callback inside a
+ * `.setting-item`. This plugin renders its complete settings page there for
+ * Settings Search, so keep that CEP-owned host vertical instead of inheriting
+ * the host row's horizontal layout.
+ */
+.setting-item:has(> .compact-empty-properties-visibility-list),
+.setting-item:has(> .compact-empty-properties-icon-list),
+.setting-item:has(> .compact-empty-properties-order-list),
+.setting-item:has(> .compact-empty-properties-scoped-list) {
+	display: block;
+}
+
 .metadata-container .metadata-property.compact-empty-properties-hidden {
 	display: none;
 }

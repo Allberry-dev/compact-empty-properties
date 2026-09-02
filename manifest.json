@@ -1,7 +1,7 @@
 {
   "id": "compact-empty-properties",
   "name": "Compact Empty Properties",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "minAppVersion": "1.13.7",
   "description": "Hide empty Properties rows in Markdown editing views without changing note data.",
   "author": "Aubry",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+### Maintenance
+
+- Restored the vertical layout of the Compact Empty Properties Settings page in Obsidian 1.13+ Settings Search.
+
 ## 0.2.1
 
 ### Maintenance
